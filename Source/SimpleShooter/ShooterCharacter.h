@@ -14,19 +14,25 @@ class SIMPLESHOOTER_API AShooterCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
+	// Podesava difolt vrednosti
 	AShooterCharacter();
 
 protected:
-	// Called when the game starts or when spawned
+	// Poziva se kada igra pocne ili se igrac spawnuje
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
+	UFUNCTION(BlueprintPure)
+	bool IsDead() const;
+
+	// Poziva se svaki frejm
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
+	// Poziva se da binduje input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	// Override za TakeDamage
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
 
 private:
 	// input funkcije
@@ -40,8 +46,15 @@ private:
 	float RotationRate = 10; // Brzina rotacije
 
 	UPROPERTY(EditDefaultsOnly)
+	float MaxHealth = 100;
+	UPROPERTY(VisibleAnywhere)
+	float Health;
+
+	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AGun> GunClass; // Nije puska, vec samo klasa puske, a ne instanca
 
 	UPROPERTY()
 	AGun *Gun; // Instanca puske
+
+
 };

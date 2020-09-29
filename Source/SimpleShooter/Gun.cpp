@@ -1,12 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Gun.h"
+#include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 #include "Components/SkeletalMeshComponent.h"
 
-// Sets default values
+// Podesava difolt vrednosti
 AGun::AGun()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Poziva se kada igra pocne ili se igrac spawnuje
 	PrimaryActorTick.bCanEverTick = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -16,18 +18,49 @@ AGun::AGun()
 	Mesh->SetupAttachment(Root);
 }
 
-void AGun::PullTrigger() 
+void AGun::PullTrigger()
 {
-	UE_LOG(LogTemp, Warning, TEXT("You've been shot!"));
+	UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, Mesh, TEXT("MuzzleFlashSocket")); // povezuje efekat sa komponentom na pusci
+
+	// Dohvatanje Viewpointa igraca radi pogadjanja raycasta
+	APawn *OwnerPawn = Cast<APawn>(GetOwner());
+	if (OwnerPawn == nullptr)
+		return;
+	AController *OwnerController = OwnerPawn->GetController();
+	if (OwnerController == nullptr)
+		return;
+
+	FVector Location;
+	FRotator Rotation;
+	OwnerController->GetPlayerViewPoint(Location, Rotation);
+
+	// Implementacija LineTracea za detekciju kolizije sa "metkom"
+	FVector End = Location + Rotation.Vector() * MaxRange;
+	FHitResult Hit;
+	bool bSuccess = GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_GameTraceChannel1); 
+	if (bSuccess)
+	{
+		// Prikaz efekta kada metak "pogodi"
+		FVector ShotDirection = -Rotation.Vector(); // Odakle dolazi pucanj je maltene negativan rotacioni vektor
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, Hit.Location, ShotDirection.Rotation());
+		// Slanje i primanje stete
+		AActor *HitActor = Hit.GetActor();
+		if (HitActor != nullptr)
+		{
+			FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, nullptr);
+			HitActor->TakeDamage(Damage, DamageEvent, OwnerController, this);
+		}
+		
+	}
 }
 
-// Called when the game starts or when spawned
+// Poziva se kada igra pocne ili se igrac spawnuje
 void AGun::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-// Called every frame
+// Poziva se svaki frejm
 void AGun::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);

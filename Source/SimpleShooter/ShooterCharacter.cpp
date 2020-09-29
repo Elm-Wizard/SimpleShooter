@@ -5,17 +5,19 @@
 #include "Gun.h"
 #include "ShooterCharacter.h"
 
-// Sets default values
+// Podesava difolt vrednosti
 AShooterCharacter::AShooterCharacter()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Podesava ovog aktera da poziva Tick() svakog frejma. 
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-// Called when the game starts or when spawned
+// Poziva se kada igra pocne ili se igrac spawnuje
 void AShooterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	Health = MaxHealth; // Na pocetku uvek maksimalan health
 
 	Gun = GetWorld()->SpawnActor<AGun>(GunClass); // pojavljuje actora puske umesto one koja je ugradjena
 	GetMesh()->HideBoneByName(TEXT("Weapon_R"), EPhysBodyOp::PBO_None); // krije originalno oruzje
@@ -23,13 +25,18 @@ void AShooterCharacter::BeginPlay()
 	Gun->SetOwner(this); // Radi konvencije, nije obavezno
 }
 
-// Called every frame
+bool AShooterCharacter::IsDead() const
+{
+	return Health <= 0;
+}
+
+// Poziva se svaki frejm
 void AShooterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
 
-// Called to bind functionality to input
+// Poziva se da binduje input
 void AShooterCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -42,6 +49,16 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputCo
 	PlayerInputComponent->BindAxis(TEXT("LookRightRate"), this, &AShooterCharacter::LookRightRate);
 	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction(TEXT("Shoot"), EInputEvent::IE_Pressed, this, &AShooterCharacter::Shoot);
+}
+
+float AShooterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) 
+{
+	float DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	DamageToApply = FMath::Min(Health, DamageToApply); // Ako je steta koja se deli veca od healtha
+	Health -= DamageToApply; // Primanje stete
+	UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
+
+	return DamageToApply;
 }
 
 void AShooterCharacter::MoveForward(float AxisValue)
