@@ -37,7 +37,14 @@ void AGun::PullTrigger()
 	// Implementacija LineTracea za detekciju kolizije sa "metkom"
 	FVector End = Location + Rotation.Vector() * MaxRange;
 	FHitResult Hit;
-	bool bSuccess = GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_GameTraceChannel1); 
+
+	// Ignorisi pri pucanju sebe i pusku
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	Params.AddIgnoredActor(GetOwner());
+
+	// LineTrace 
+	bool bSuccess = GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_GameTraceChannel1, Params); 
 	if (bSuccess)
 	{
 		// Prikaz efekta kada metak "pogodi"

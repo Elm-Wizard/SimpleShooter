@@ -16,7 +16,7 @@ class SIMPLESHOOTER_API AShooterAIController : public AAIController
 
 public:
 	// Poziva se svaki frejm
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DeltaSeconds) override;
 	
 protected:
 	// Poziva se kada igra pocne ili se igrac spawnuje
@@ -24,5 +24,7 @@ protected:
 
 private:
 	UPROPERTY(EditAnywhere)
-	float AcceptanceRadius = 200;
+	class UBehaviorTree *AIBehavior; // Drvo ponasanja AI-a
+
+
 };

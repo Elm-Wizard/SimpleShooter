@@ -34,13 +34,15 @@ public:
 	// Override za TakeDamage
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
 
+	// Metoda za pucanje
+	void Shoot();
+
 private:
 	// input funkcije
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
 	void LookUpRate(float AxisValue);
 	void LookRightRate(float AxisValue);
-	void Shoot();
 
 	UPROPERTY(EditAnywhere)
 	float RotationRate = 10; // Brzina rotacije

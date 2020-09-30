@@ -3,12 +3,14 @@
 #include "Components/InputComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Gun.h"
+#include "Components/CapsuleComponent.h"
+#include "SimpleShooterGameModeBase.h"
 #include "ShooterCharacter.h"
 
 // Podesava difolt vrednosti
 AShooterCharacter::AShooterCharacter()
 {
-	// Podesava ovog aktera da poziva Tick() svakog frejma. 
+	// Podesava ovog aktera da poziva Tick() svakog frejma.
 	PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -19,10 +21,10 @@ void AShooterCharacter::BeginPlay()
 
 	Health = MaxHealth; // Na pocetku uvek maksimalan health
 
-	Gun = GetWorld()->SpawnActor<AGun>(GunClass); // pojavljuje actora puske umesto one koja je ugradjena
-	GetMesh()->HideBoneByName(TEXT("Weapon_R"), EPhysBodyOp::PBO_None); // krije originalno oruzje
+	Gun = GetWorld()->SpawnActor<AGun>(GunClass);															   // pojavljuje actora puske umesto one koja je ugradjena
+	GetMesh()->HideBoneByName(TEXT("Weapon_R"), EPhysBodyOp::PBO_None);										   // krije originalno oruzje
 	Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("WeaponSocket")); // povezuje sa komponentom
-	Gun->SetOwner(this); // Radi konvencije, nije obavezno
+	Gun->SetOwner(this);																					   // Radi konvencije, nije obavezno
 }
 
 bool AShooterCharacter::IsDead() const
@@ -51,12 +53,26 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent *PlayerInputCo
 	PlayerInputComponent->BindAction(TEXT("Shoot"), EInputEvent::IE_Pressed, this, &AShooterCharacter::Shoot);
 }
 
-float AShooterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) 
+float AShooterCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const &DamageEvent, class AController *EventInstigator, AActor *DamageCauser)
 {
+
 	float DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	DamageToApply = FMath::Min(Health, DamageToApply); // Ako je steta koja se deli veca od healtha
-	Health -= DamageToApply; // Primanje stete
+	Health -= DamageToApply;						   // Primanje stete
 	UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
+
+	// Ako je mrtav, otkaci kontroler i ugasi koliziju
+	if (IsDead())
+	{
+		ASimpleShooterGameModeBase *GameMode = GetWorld()->GetAuthGameMode<ASimpleShooterGameModeBase>();
+		if (GameMode != nullptr)
+		{
+			GameMode->PawnKilled(this);
+		}
+
+		DetachFromControllerPendingDestroy();
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 
 	return DamageToApply;
 }
@@ -81,7 +97,7 @@ void AShooterCharacter::LookRightRate(float AxisValue)
 	AddControllerYawInput(AxisValue * RotationRate * GetWorld()->GetDeltaSeconds());
 }
 
-void AShooterCharacter::Shoot() 
+void AShooterCharacter::Shoot()
 {
 	Gun->PullTrigger();
 }
