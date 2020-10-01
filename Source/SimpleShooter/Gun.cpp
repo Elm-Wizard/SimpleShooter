@@ -22,42 +22,24 @@ void AGun::PullTrigger()
 {
 	UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, Mesh, TEXT("MuzzleFlashSocket")); // povezuje efekat sa komponentom na pusci
 
-	// Dohvatanje Viewpointa igraca radi pogadjanja raycasta
-	APawn *OwnerPawn = Cast<APawn>(GetOwner());
-	if (OwnerPawn == nullptr)
-		return;
-	AController *OwnerController = OwnerPawn->GetController();
-	if (OwnerController == nullptr)
-		return;
-
-	FVector Location;
-	FRotator Rotation;
-	OwnerController->GetPlayerViewPoint(Location, Rotation);
-
-	// Implementacija LineTracea za detekciju kolizije sa "metkom"
-	FVector End = Location + Rotation.Vector() * MaxRange;
+	// ViewPoint, implementacija LineTracea i ignorisanje aktera pri pucanju
 	FHitResult Hit;
+	FVector ShotDirection;
+	bool bSuccess = GunTrace(Hit, ShotDirection);
 
-	// Ignorisi pri pucanju sebe i pusku
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-	Params.AddIgnoredActor(GetOwner());
-
-	// LineTrace 
-	bool bSuccess = GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_GameTraceChannel1, Params); 
+	// Ako "metak pogodi"
 	if (bSuccess)
 	{
 		// Prikaz efekta kada metak "pogodi"
-		FVector ShotDirection = -Rotation.Vector(); // Odakle dolazi pucanj je maltene negativan rotacioni vektor
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, Hit.Location, ShotDirection.Rotation());
 		// Slanje i primanje stete
 		AActor *HitActor = Hit.GetActor();
 		if (HitActor != nullptr)
 		{
 			FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, nullptr);
+			AController *OwnerController = GetOwnerController();
 			HitActor->TakeDamage(Damage, DamageEvent, OwnerController, this);
 		}
-		
 	}
 }
 
@@ -71,4 +53,35 @@ void AGun::BeginPlay()
 void AGun::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+bool AGun::GunTrace(FHitResult &Hit, FVector &ShotDirection)
+{
+	AController *OwnerController = GetOwnerController();
+	if (OwnerController == nullptr)
+		return false;
+	FVector Location;
+	FRotator Rotation;
+	OwnerController->GetPlayerViewPoint(Location, Rotation);
+	ShotDirection = -Rotation.Vector(); // Odakle dolazi pucanj je maltene negativan rotacioni vektor
+
+	// Implementacija LineTracea za detekciju kolizije sa "metkom"
+	FVector End = Location + Rotation.Vector() * MaxRange;
+
+	// Ignorisi pri pucanju sebe i pusku
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	Params.AddIgnoredActor(GetOwner());
+
+	// LineTrace
+	return GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_GameTraceChannel1, Params);
+}
+
+AController *AGun::GetOwnerController() const
+{
+	// Dohvatanje Viewpointa igraca radi pogadjanja raycasta
+	APawn *OwnerPawn = Cast<APawn>(GetOwner());
+	if (OwnerPawn == nullptr)
+		return nullptr;
+	return OwnerPawn->GetController();
 }

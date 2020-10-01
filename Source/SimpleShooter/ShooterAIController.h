@@ -17,6 +17,7 @@ class SIMPLESHOOTER_API AShooterAIController : public AAIController
 public:
 	// Poziva se svaki frejm
 	virtual void Tick(float DeltaSeconds) override;
+	bool IsDead() const;
 	
 protected:
 	// Poziva se kada igra pocne ili se igrac spawnuje
