@@ -20,7 +20,8 @@ AGun::AGun()
 
 void AGun::PullTrigger()
 {
-	UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, Mesh, TEXT("MuzzleFlashSocket")); // povezuje efekat sa komponentom na pusci
+	UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, Mesh, TEXT("MuzzleFlashSocket")); // Povezuje efekat sa komponentom na pusci
+	UGameplayStatics::SpawnSoundAttached(MuzzleSound, Mesh, TEXT("MuzzleFlashSocket")); // Povezuje zvuk
 
 	// ViewPoint, implementacija LineTracea i ignorisanje aktera pri pucanju
 	FHitResult Hit;
@@ -32,6 +33,7 @@ void AGun::PullTrigger()
 	{
 		// Prikaz efekta kada metak "pogodi"
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, Hit.Location, ShotDirection.Rotation());
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ImpactSound, Hit.Location); // Zvuk udarca o nesto
 		// Slanje i primanje stete
 		AActor *HitActor = Hit.GetActor();
 		if (HitActor != nullptr)
