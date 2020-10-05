@@ -4,10 +4,23 @@
 #include "Blueprint/UserWidget.h"
 #include "ShooterPlayerController.h"
 
+void AShooterPlayerController::BeginPlay()
+{
+    Super::BeginPlay();
+
+    // Instanciramo nisan
+    HUD = CreateWidget(this, HUDClass);
+    if (HUD != nullptr)
+    {
+        HUD->AddToViewport(); // Prikaz nisana
+    }
+}
+
 void AShooterPlayerController::GameHasEnded(class AActor *EndGameFocus, bool bIsWinner)
 {
     Super::GameHasEnded(EndGameFocus, bIsWinner);
 
+    HUD->RemoveFromViewport(); // Uklanja nisan ako zavrsimo igru
     if (bIsWinner)
     {
         // Instanciramo win screen
